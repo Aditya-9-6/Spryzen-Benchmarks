@@ -49,9 +49,9 @@ Legacy web application firewalls and reverse proxies (Cloudflare, AWS WAF, ModSe
 
 ---
 
-## 🚀 3-Step Quickstart: Verify the 18.2µs Latency Locally
+## 🚀 Quickstart: Verify the 18.2µs Latency Locally
 
-You do not need to install Rust or configure compilers. We provide a pre-packaged **Docker Compose environment** using the official **Grafana k6** load engine.
+You do not need to manually configure Rust or complex toolchains. The automated multi-stage **Docker Compose** environment builds and runs the engine and the official **Grafana k6** load generator in a single step.
 
 ### Prerequisites
 * [Docker Desktop](https://www.docker.com/products/docker-desktop/) or Docker Engine (Linux / macOS / Windows)
@@ -63,13 +63,7 @@ git clone https://github.com/Aditya-9-6/Spryzen-Benchmarks.git
 cd Spryzen-Benchmarks
 ```
 
-### Step 2: Place or Build the Pre-Compiled Linux Binary
-Place the pre-compiled `Spryzen-engine` binary into the repository directory:
-```bash
-chmod +x Spryzen-engine
-```
-
-### Step 3: Run the Load Test
+### Step 2: Run the Automated Load Test
 ```bash
 docker compose up --build --abort-on-container-exit
 ```

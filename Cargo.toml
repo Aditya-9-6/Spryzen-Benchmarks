@@ -1,0 +1,19 @@
+﻿[package]
+name = "spryzen-engine"
+version = "2.0.4"
+edition = "2021"
+
+[dependencies]
+tokio = { version = "1.43", features = ["full"] }
+hyper = { version = "1.6", features = ["full"] }
+hyper-util = { version = "0.1", features = ["full"] }
+http-body-util = { version = "0.1" }
+bytes = "1.10"
+ahash = "0.8"
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = true
