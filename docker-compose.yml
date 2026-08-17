@@ -1,0 +1,35 @@
+services:
+  ironwall:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: spryzen-engine
+    ports:
+      - "8081:8081"
+    restart: unless-stopped
+    ulimits:
+      nofile:
+        soft: 1048576
+        hard: 1048576
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 1024M
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8081/health"]
+      interval: 2s
+      timeout: 1s
+      retries: 10
+      start_period: 2s
+
+  k6:
+    image: grafana/k6:latest
+    container_name: spryzen-k6-runner
+    depends_on:
+      ironwall:
+        condition: service_healthy
+    volumes:
+      - ./benchmark.js:/benchmark.js:ro
+    entrypoint: ["k6", "run", "/benchmark.js"]
+    network_mode: "service:ironwall"

@@ -1,0 +1,41 @@
+SPRYZEN+ / IRONWALL PROPRIETARY BENCHMARK & EVALUATION LICENSE AGREEMENT (EULA)
+================================================================================
+Copyright (c) 2026 Aditya Dahale & Spryzen Core Contributors. All Rights Reserved.
+
+IMPORTANT — READ CAREFULLY:
+This End User License Agreement ("Agreement") is a legal contract between you ("Evaluator" 
+or "Licensee") and the author/licensor ("Aditya Dahale"). By downloading, cloning, running, 
+or executing the container images, binaries, or benchmarking suites contained in this 
+repository, you agree to be bound by the terms of this Agreement.
+
+1. GRANT OF EVALUATION LICENSE:
+Licensor grants you a non-exclusive, non-transferable, revocable, limited license to run 
+and execute the compiled binary ("Spryzen-engine") solely for the purpose of independent 
+performance evaluation, academic validation, and local benchmarking as described in this 
+repository.
+
+2. STRICT PROHIBITIONS & INTELLECTUAL PROPERTY PROTECTION:
+You explicitly agree NOT to:
+  a. Decompile, disassemble, decrypt, unpack, or reverse engineer the compiled binary or any 
+     portion thereof, or attempt to derive the underlying Rust source code, algorithms, 
+     vector index structures, or protocol designs.
+  b. Distribute, lease, sell, sublicense, host as a commercial SaaS/API, or commercially 
+     exploit the binary in any production environment without express written consent.
+  c. Modify, alter, patch, strip copyright notices, or create derivative works of the binary 
+     or container assets.
+  d. Use the benchmark results to publish disparaging or misleading claims without publishing 
+     the complete, unmodified reproduction methodology provided herein.
+
+3. OWNERSHIP OF INTELLECTUAL PROPERTY:
+All title, intellectual property rights, patent rights, trade secrets, trademarks, and 
+copyrights in and to Spryzen+ (including but not limited to the SIMD Aho-Corasick pipeline, 
+Bump Arena memory layout, Spryzen ID zero-trust protocols, Ouroboros mutator algorithms, 
+and binary artifacts) remain exclusively the sole property of Aditya Dahale.
+
+4. DISCLAIMER OF WARRANTY & LIMITATION OF LIABILITY:
+THE SOFTWARE AND BINARIES ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
+PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHOR OR COPYRIGHT HOLDERS 
+BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
+TORT, OR OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE 
+OR OTHER DEALINGS IN THE SOFTWARE.
