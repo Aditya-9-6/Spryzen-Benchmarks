@@ -1,0 +1,44 @@
+﻿# =============================================================================
+# CodeRabbit AI Code Review Configuration for Spryzen+
+# =============================================================================
+version: "2"
+language: "en-US"
+
+tone_instructions: "Be concise, highly technical, and focus on Rust systems performance, zero-allocation invariants, thread safety, and security vulnerabilities."
+
+reviews:
+  profile: "assertive"
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: false
+  auto_review:
+    enabled: true
+    drafts: false
+    base_branches:
+      - "main"
+      - "master"
+      - "develop"
+
+  # Path filters
+  path_filters:
+    - "!target/**"
+    - "!*.lock"
+    - "!*.pdb"
+    - "!*.exe"
+
+  # Custom Review Instructions tailored for Spryzen Engine
+  instructions: |
+    - Focus heavily on Rust performance, memory layout, and zero-heap allocations.
+    - Flag any accidental heap allocations (e.g. `String`, `Vec::new`, `Box`, `format!`) in hot paths where `BumpArena` should be used.
+    - Check for atomic cache-line false sharing (ensure 64-byte alignment on shared atomic counters).
+    - Ensure SIMD vectorization and Aho-Corasick patterns maintain deterministic $O(N)$ matching.
+    - Verify eBPF / XDP safety and memory boundary validations.
+    - Ensure all public functions have clear doc comments.
+
+chat:
+  auto_reply: true
+
+knowledge_base:
+  opt_out: false
