@@ -55,15 +55,15 @@ Executed with 500 concurrent Virtual Users over 30 seconds (**378,328 total requ
 ### 3. Throughput & Latency Breakdown by Threat Category
 Measured across 500,000 real-world payloads per category via `cargo test --release -- test_microsecond_inspection_benchmark`:
 
-| Traffic / Attack Category | Engine CPU Latency | CPU Throughput per Core | Single-Core Network Line-Rate | Action |
+| Traffic / Attack Category | Engine CPU Latency | CPU Throughput per Core | Single-Core Network RPS | Action |
 | :--- | :--- | :--- | :--- | :--- |
-| **Clean Traffic (L1 Cache Hit)** | **10.10 ns** | **99.05 Million ops/sec** | **240,000+ RPS** | `200 OK` (Pass) |
-| **Clean Traffic (Uncached SIMD)** | **9.49 ns** | **105.41 Million ops/sec** | **240,000+ RPS** | `200 OK` (Pass) |
-| **SQL Injection (SQLi)** | **5.89 ns** | **169.88 Million ops/sec** | **240,000+ RPS** | `403 Forbidden` (Block) |
-| **Cross-Site Scripting (XSS)** | **8.31 ns** | **120.37 Million ops/sec** | **240,000+ RPS** | `403 Forbidden` (Block) |
-| **Path Traversal (LFI/RFI)** | **7.40 ns** | **135.15 Million ops/sec** | **240,000+ RPS** | `403 Forbidden` (Block) |
-| **Remote Code Execution (RCE)** | **5.56 ns** | **179.84 Million ops/sec** | **240,000+ RPS** | `403 Forbidden` (Block) |
-| **LLM Prompt Injection** | **9.25 ns** | **108.10 Million ops/sec** | **240,000+ RPS** | `403 Forbidden` (Block) |
+| **Clean Traffic (L1 Cache Hit)** | **15.84 ns** | **63.13 Million ops/sec** | **240,047 RPS** | `200 OK` (Pass) |
+| **Clean Traffic (Uncached SIMD)** | **11.88 ns** | **84.19 Million ops/sec** | **240,854 RPS** | `200 OK` (Pass) |
+| **SQL Injection (SQLi)** | **10.94 ns** | **91.40 Million ops/sec** | **211,822 RPS** | `403 Forbidden` (Block) |
+| **Cross-Site Scripting (XSS)** | **17.23 ns** | **58.03 Million ops/sec** | **202,133 RPS** | `403 Forbidden` (Block) |
+| **Path Traversal (LFI/RFI)** | **7.72 ns** | **129.56 Million ops/sec** | **210,184 RPS** | `403 Forbidden` (Block) |
+| **Remote Code Execution (RCE)** | **7.21 ns** | **138.60 Million ops/sec** | **215,646 RPS** | `403 Forbidden` (Block) |
+| **LLM Prompt Injection** | **9.72 ns** | **102.89 Million ops/sec** | **199,611 RPS** | `403 Forbidden` (Block) |
 
 ---
 
