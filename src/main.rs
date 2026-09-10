@@ -428,5 +428,50 @@ mod tests {
         assert!(has_risky_characters(b"../../etc/passwd"));
         assert!(!has_risky_characters(b"api_v1_users_profile_avatar"));
     }
+
+    #[test]
+    fn test_microsecond_inspection_benchmark() {
+        use std::time::Instant;
+
+        let mut ins = ThreadLocalInspector::new();
+        let iterations = 1_000_000;
+
+        // Warm up
+        for _ in 0..10_000 {
+            std::hint::black_box(ins.inspect("/api/v1/products/104", Some("category=electronics")));
+        }
+
+        // 1. Clean Path (L1 Cache Hit)
+        let start = Instant::now();
+        for _ in 0..iterations {
+            let res = ins.inspect("/api/v1/products/104", Some("category=electronics"));
+            std::hint::black_box(res);
+        }
+        let elapsed_clean = start.elapsed();
+        let ns_per_clean = elapsed_clean.as_nanos() as f64 / iterations as f64;
+        let mops_clean = (iterations as f64 / elapsed_clean.as_secs_f64()) / 1_000_000.0;
+
+        // 2. Attack Path (SQL Injection Aho-Corasick Evaluation)
+        let start = Instant::now();
+        for i in 0..iterations {
+            let query = if i % 2 == 0 { "user=admin'--" } else { "id=1 union select * from users" };
+            let res = ins.inspect("/login", Some(query));
+            std::hint::black_box(res);
+        }
+        let elapsed_attack = start.elapsed();
+        let ns_per_attack = elapsed_attack.as_nanos() as f64 / iterations as f64;
+        let mops_attack = (iterations as f64 / elapsed_attack.as_secs_f64()) / 1_000_000.0;
+
+        println!("\n╔════════════════════════════════════════════════════════════════════╗");
+        println!("║       ⚡ SPRYZEN ENGINE PURE CPU ZERO-ALLOC BENCHMARK ⚡          ║");
+        println!("╠════════════════════════════════════════════════════════════════════╣");
+        println!("║  • Iterations              : {:<37} ║", iterations);
+        println!("║  • Clean Path (L1 Hit)     : {:<6.2} ns/req ({:.2} M ops/sec/core) ║", ns_per_clean, mops_clean);
+        println!("║  • Attack Path (Deep Scan) : {:<6.2} ns/req ({:.2} M ops/sec/core) ║", ns_per_attack, mops_attack);
+        println!("╚════════════════════════════════════════════════════════════════════╝\n");
+
+        assert!(ns_per_clean < 500.0, "Clean path must be < 500ns");
+        assert!(ns_per_attack < 2000.0, "Attack path must be < 2000ns (2µs)");
+    }
 }
 
