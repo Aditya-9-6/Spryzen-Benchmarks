@@ -1,13 +1,16 @@
 # ⚡ Spryzen Single-Core & Sovereign Edge Benchmarks
 
-[![Throughput](https://img.shields.io/badge/Throughput-185%2C000%2B_req%2Fsec-00f2ff?style=for-the-badge&logo=rust)](https://github.com/Aditya-9-6/Spryzen-Benchmarks)
+[![eBPF / XDP](https://img.shields.io/badge/eBPF%2FXDP-6.92M_PPS-orange?style=for-the-badge&logo=linux)](https://github.com/Aditya-9-6/Spryzen-Benchmarks)
+[![Sustained Throughput](https://img.shields.io/badge/Cluster_Throughput-4.83M_RPS-blue?style=for-the-badge&logo=rust)](https://github.com/Aditya-9-6/Spryzen-Benchmarks)
+[![Throughput](https://img.shields.io/badge/Single--Core_Throughput-240%2C000%2B_req%2Fsec-00f2ff?style=for-the-badge&logo=rust)](https://github.com/Aditya-9-6/Spryzen-Benchmarks)
 [![P50 Latency](https://img.shields.io/badge/p50_Latency-12%C2%B5s-3b82f6?style=for-the-badge)](https://github.com/Aditya-9-6/Spryzen-Benchmarks)
 [![P99 Latency](https://img.shields.io/badge/p99_Latency-95%C2%B5s-10b981?style=for-the-badge)](https://github.com/Aditya-9-6/Spryzen-Benchmarks)
 [![OWASP CRS](https://img.shields.io/badge/OWASP_CRS-100%25_Blocked-success?style=for-the-badge)](https://github.com/Aditya-9-6/Spryzen-Benchmarks)
-[![sqlmap](https://img.shields.io/badge/sqlmap-Protected-blueviolet?style=for-the-badge)](https://github.com/Aditya-9-6/Spryzen-Benchmarks)
 [![RAM](https://img.shields.io/badge/Memory_Footprint-18MB_RSS-a855f7?style=for-the-badge)](https://github.com/Aditya-9-6/Spryzen-Benchmarks)
 
 Official reproducible benchmark suite, penetration evaluation, and microsecond architectural implementation for the **Spryzen Bare-Metal WAF & Edge Security Engine**.
+
+> **Systems Invariants:** Reaching **6.92M PPS** L3/L4 kernel-bypass DDoS filtering and **4.83M sustained RPS** horizontal proxy throughput. Powered by zero-allocation Rust, AVX2 SIMD scanning, and L1 cache lookup tables with upstream systems contributions across Tokio, Wasmtime, smoltcp, Foundry, Cloudflare Pingora, and Hyper.
 
 ---
 
@@ -71,12 +74,16 @@ Executed with 500 concurrent Virtual Users over 30 seconds (**378,328 total requ
 
 ---
 
-## 🧠 The Architecture (How We Scale to Microseconds)
+## 🛠️ Upstream Core Infrastructure Contributions (11+ Systems Fixes)
 
-1. **Zero-Copy AF_XDP Kernel Bypass**: Volumetric DDoS traffic is dropped directly in the NIC DMA ring (`XDP_DROP`).
-2. **AVX2 32-Byte SIMD Vector Scanning**: Evaluates **32 bytes per single CPU clock cycle** for injection boundaries and delimiters.
-3. **Zero-Allocation Stack Bitmask Triage**: Threat detections are represented as a 32-bit stack bitflag (`ThreatFlags::SQLI | ThreatFlags::XSS`). Zero heap garbage and zero allocator locks.
-4. **Thread-Local L1 Hash Cache**: 2048-slot direct-mapped cache using hardware-accelerated `ahash`. Validated clean paths exit in **under 200 nanoseconds (< 0.2 µs)**.
+Spryzen's sub-microsecond networking and zero-allocation philosophy is directly upstreamed to foundational open-source runtimes and edge proxies:
+
+* **[smoltcp (PR #1194 - Merged)](https://github.com/smoltcp-rs/smoltcp/pull/1194)**: Engineered single-pass zero-allocation `TcpOptionSummary` wire parser.
+* **[Foundry (PR #16707 - Merged)](https://github.com/foundry-rs/foundry/pull/16707)**: Hardened Chisel session validator against NTFS alternate data stream path traversal.
+* **[Cloudflare Pingora (PR #1039)](https://github.com/cloudflare/pingora/pull/1039)**: Fixed panic on non-UTF-8 response headers in HTTP/1 trace logging.
+* **[Hyperium Hyper (PR #337)](https://github.com/hyperium/hyper-util/pull/337)**: Bounded automatic server protocol version detection with configurable read timeout.
+* **[Bytecode Alliance Wasmtime (PR #14515)](https://github.com/bytecodealliance/wasmtime/pull/14515)**: Enhanced CLI component export validation error reporting.
+* **[Tokio Async Runtime (PR #8575)](https://github.com/tokio-rs/tokio/pull/8575)**: Resolved arithmetic overflow guard on buffered relative file seeks.
 
 ---
 
