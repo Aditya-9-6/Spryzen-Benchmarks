@@ -65,10 +65,10 @@ def main():
 
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.settimeout(1.0)
+            s.settimeout(0.05)
             s.connect((HOST, PORT))
             s.sendall(payload)
-            # Try to read partial response
+            s.setblocking(False)
             try:
                 s.recv(512)
             except Exception:
