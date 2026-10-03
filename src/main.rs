@@ -538,11 +538,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
                     // Zero-Allocation Inspection
                     let verdict = INSPECTOR.with(|ins| {
-                        ins.borrow_mut().inspect(
-                            &path,
-                            query.as_deref(),
-                            body_slice,
-                        )
+                        ins.borrow_mut()
+                            .inspect(&path, query.as_deref(), body_slice)
                     });
 
                     if verdict.is_threat() {
@@ -567,8 +564,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
                     // Forward to upstream if UPSTREAM_URL is configured
                     if let Some(target) = upstream.as_ref() {
-                        let path_and_query = uri.path_and_query().map(|pq| pq.as_str()).unwrap_or("/");
-                        let upstream_uri_str = format!("{}{}", target.trim_end_matches('/'), path_and_query);
+                        let path_and_query =
+                            uri.path_and_query().map(|pq| pq.as_str()).unwrap_or("/");
+                        let upstream_uri_str =
+                            format!("{}{}", target.trim_end_matches('/'), path_and_query);
 
                         match upstream_uri_str.parse::<hyper::Uri>() {
                             Ok(upstream_uri) => {
