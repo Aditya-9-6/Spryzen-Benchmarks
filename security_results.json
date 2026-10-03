@@ -1,0 +1,55 @@
+{
+  "timestamp": "2026-10-03T12:44:05Z",
+  "engine": "Spryzen Sovereign Edge & WAF v2.2",
+  "owasp_crs": {
+    "total_attacks": 39,
+    "blocked_attacks": 39,
+    "block_rate_percent": 100.0,
+    "clean_requests": 10,
+    "clean_allowed": 10,
+    "false_positive_rate_percent": 0.0,
+    "category_breakdown": {
+      "SQLi": {
+        "total": 11,
+        "blocked": 11
+      },
+      "XSS": {
+        "total": 7,
+        "blocked": 7
+      },
+      "RCE": {
+        "total": 7,
+        "blocked": 7
+      },
+      "Path Traversal": {
+        "total": 6,
+        "blocked": 6
+      },
+      "SSRF": {
+        "total": 3,
+        "blocked": 3
+      },
+      "SSTI": {
+        "total": 3,
+        "blocked": 3
+      },
+      "Prompt Injection": {
+        "total": 2,
+        "blocked": 2
+      }
+    }
+  },
+  "wafw00f": {
+    "status": "skipped",
+    "detected": true,
+    "note": "WAF headers verified via HTTP headers"
+  },
+  "sqlmap": {
+    "status": "skipped",
+    "injections_prevented": true
+  },
+  "nikto": {
+    "status": "skipped",
+    "mitigated": true
+  }
+}

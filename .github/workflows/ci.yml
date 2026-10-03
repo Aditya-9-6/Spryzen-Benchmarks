@@ -1,4 +1,4 @@
-name: CI
+name: Spryzen CI & Verification
 
 on:
   push:
@@ -12,12 +12,22 @@ permissions:
 
 jobs:
   test:
-    name: Spryzen Benchmarks Verification
+    name: Build, Lint & Unit Tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Rust Check & Verification
-        run: |
-          cargo check
+      - name: Set up Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - name: Rust Formatting Check
+        run: cargo fmt -- --check
+
+      - name: Clippy Linter
+        run: cargo clippy --all-targets -- -D warnings
+
+      - name: Run Core Test Suite
+        run: cargo test --release -- --nocapture
