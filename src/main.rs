@@ -266,6 +266,7 @@ struct SiemLogEntry<'a> {
     latency_us: u64,
 }
 
+#[allow(clippy::too_many_arguments)]
 fn emit_siem_log(
     is_json: bool,
     client_ip: IpAddr,
@@ -728,7 +729,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         format!("http://{}", addr)
     );
     if let Some(ref up) = config.server.upstream {
-        println!("║       Upstream URL: {:<49}║", format!("{}", up));
+        println!("║       Upstream URL: {:<49}║", up);
         println!("║       Operating Mode: ACTIVE DROP-IN INLINE REVERSE PROXY WAF         ║");
     } else {
         println!("║       Upstream URL: (none) -> STANDALONE BENCHMARK & EVALUATION MODE  ║");
