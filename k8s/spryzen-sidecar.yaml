@@ -1,0 +1,86 @@
+# =============================================================================
+# Spryzen+ Kubernetes Sidecar Pattern
+# Drops inline in front of ANY Kubernetes pod container with 12µs P50 latency
+# =============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payment-service-shielded
+  labels:
+    app: payment-service
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: payment-service
+  template:
+    metadata:
+      labels:
+        app: payment-service
+    spec:
+      containers:
+        # --- 1. SPRYZEN EDGE & WAF SIDECAR ---
+        - name: spryzen-waf
+          image: ghcr.io/aditya-9-6/spryzen:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+              name: http-waf
+          env:
+            - name: PORT
+              value: "8080"
+            - name: UPSTREAM_URL
+              value: "http://127.0.0.1:3000"
+            - name: SPRYZEN_MODE
+              value: "block" # or "simulate" for zero-risk audit onboarding
+            - name: RUST_LOG
+              value: "info"
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "32Mi"
+            limits:
+              cpu: "1000m"
+              memory: "128Mi"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 2
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 1
+            periodSeconds: 5
+
+        # --- 2. YOUR APPLICATION BACKEND SERVICE ---
+        - name: app-backend
+          image: hashicorp/http-echo:latest
+          args:
+            - "-text=Protected Payment API Response"
+            - "-listen=:3000"
+          ports:
+            - containerPort: 3000
+              name: http-backend
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "64Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: payment-service
+spec:
+  selector:
+    app: payment-service
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080 # Route external traffic through Spryzen WAF (:8080)
+  type: ClusterIP

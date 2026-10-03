@@ -1,0 +1,61 @@
+# =============================================================================
+# Spryzen+ Kubernetes Standalone Gateway / Ingress Shield
+# High-Throughput Edge WAF Gateway for Cluster-Wide Ingress Protection
+# =============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spryzen-gateway
+  labels:
+    app: spryzen-gateway
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: spryzen-gateway
+  template:
+    metadata:
+      labels:
+        app: spryzen-gateway
+    spec:
+      containers:
+        - name: spryzen
+          image: ghcr.io/aditya-9-6/spryzen:latest
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: PORT
+              value: "8080"
+            - name: UPSTREAM_URL
+              value: "http://internal-api-service.default.svc.cluster.local:80"
+            - name: SPRYZEN_MODE
+              value: "block"
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "64Mi"
+            limits:
+              cpu: "2000m"
+              memory: "256Mi"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: spryzen-gateway-svc
+spec:
+  type: LoadBalancer
+  selector:
+    app: spryzen-gateway
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080

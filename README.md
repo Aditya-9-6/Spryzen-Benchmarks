@@ -67,6 +67,7 @@ services:
     environment:
       - PORT=8080
       - UPSTREAM_URL=http://my-backend:3000
+      - SPRYZEN_MODE=block # or "simulate" for zero-risk onboarding
     depends_on:
       - my-backend
 
@@ -74,6 +75,56 @@ services:
     image: my-app:latest
     expose:
       - "3000"
+```
+
+---
+
+## 🏢 Enterprise-Grade Architecture & Capabilities
+
+Spryzen is engineered as a cloud-native, zero-downtime API Security Gateway:
+
+### 1. Zero-Risk Onboarding: `block` vs `simulate` Mode
+* **`SPRYZEN_MODE=simulate` (Audit & Monitor Mode):** Runs full AVX2 SIMD deep-packet scanning, emits real-time SIEM audit logs and tags `x-spryzen-simulated-verdict: WOULD_BLOCK` headers, but **forwards traffic cleanly to the backend**. Enables enterprise teams to benchmark false-positive rates on production traffic with **0% risk of service disruption**.
+* **`SPRYZEN_MODE=block` (Active Defense):** Autonomous line-rate mitigation with `403 Forbidden`.
+
+### 2. In-Memory Token-Bucket Rate Limiter
+* Tracks client IPs with lock-free atomic counters.
+* Protects origins from brute-force spikes and L7 credential stuffing.
+* Returns RFC 6585 compliant `429 Too Many Requests` with `Retry-After: 1` and `x-spryzen-verdict: RATE_LIMITED`.
+
+### 3. Declarative Configuration (`spryzen.toml`)
+```toml
+[server]
+listen = "0.0.0.0:8080"
+upstream = "http://backend:3000"
+mode = "block" # "block" | "simulate" | "bypass"
+timeout_ms = 10000
+max_body_bytes = 10485760 # 10 MB DoS protection
+
+[rate_limit]
+enabled = true
+requests_per_second = 1000
+burst = 2000
+
+[allowlist]
+paths = ["/health", "/metrics", "/api/v1/webhooks/*"]
+ips = ["127.0.0.1", "10.0.0.0/8"]
+
+[logging]
+format = "json" # Structured NDJSON for Datadog / Splunk / Elastic
+mask_headers = ["authorization", "cookie", "x-api-key"] # PCI-DSS / SOC 2 compliance
+```
+
+### 4. Structured SIEM JSON Audit Logging
+Emits machine-readable NDJSON telemetry with sensitive header redaction:
+```json
+{"timestamp":1791054900,"client_ip":"198.51.100.24","method":"POST","path":"/api/login","status":403,"verdict":"BLOCKED","threat":"SQL Injection","mode":"block","latency_us":14}
+```
+
+### 5. Kubernetes Sidecar Pattern (`k8s/spryzen-sidecar.yaml`)
+Drops transparently into any existing Kubernetes pod alongside your application container over `localhost`:
+```bash
+kubectl apply -f k8s/spryzen-sidecar.yaml
 ```
 
 ---
