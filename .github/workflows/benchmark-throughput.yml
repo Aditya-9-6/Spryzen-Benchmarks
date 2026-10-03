@@ -38,7 +38,7 @@ jobs:
 
       - name: Start Spryzen Engine Daemon
         run: |
-          PORT=8081 ./target/release/spryzen-engine > spryzen_daemon.log 2>&1 &
+          PORT=8081 RATE_LIMIT_ENABLED=false ./target/release/spryzen-engine > spryzen_daemon.log 2>&1 &
           sleep 2
           curl -s http://127.0.0.1:8081/health || exit 1
 
