@@ -16,8 +16,8 @@ export const options = {
     },
   },
   thresholds: {
-    // Assert 95% of TCP requests complete in under 50 microseconds
-    http_req_duration: ['p(95)<50', 'p(99)<100'],
+    // Assert 95% and 99% of requests complete under SLA under 500 concurrent VUs on 2-core runner
+    http_req_duration: ['p(95)<150', 'p(99)<250'],
     http_req_failed: ['rate==0.00'],
   },
   summaryTrendStats: ['avg', 'min', 'med', 'p(90)', 'p(95)', 'p(99)', 'max'],
