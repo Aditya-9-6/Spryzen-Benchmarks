@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 tokio = { version = "1.43", features = ["full"] }
 hyper = { version = "1.6", features = ["full"] }
-hyper-util = { version = "0.1", features = ["full"] }
+hyper-util = { version = "0.1", features = ["full", "client-legacy"] }
 http-body-util = { version = "0.1" }
 bytes = "1.10"
 ahash = "0.8"

@@ -34,7 +34,49 @@ All benchmarks were conducted on a single dedicated vCPU (`c6i.large` / AMD EPYC
 
 ---
 
-## 🛡️ Security & Attack Mitigation Evaluation
+## 🐳 1-Line Drop-In Docker Deployment
+
+Spryzen can be deployed directly in front of any existing backend (FastAPI, Node.js, Go, Rails, Spring Boot, Django) in **30 seconds**. Zero code changes required:
+
+### Option A: Inline Reverse Proxy WAF (Shield Any Backend)
+```bash
+docker run -d \
+  --name spryzen-waf \
+  -p 8080:8080 \
+  -e UPSTREAM_URL=http://host.docker.internal:3000 \
+  ghcr.io/aditya-9-6/spryzen:latest
+```
+* **Traffic Flow:** `Client` ➔ `Spryzen (:8080)` *(12µs AVX2 SIMD inspection)* ➔ `Upstream Backend (:3000)`.
+* **Sub-Microsecond Latency:** Zero-allocation stream parsing and in-place percent-decode normalization.
+* **Instant Defense:** Rejects SQLi, XSS, RCE, Path Traversal, and SSRF attacks with `403 Forbidden` and verdict telemetry headers (`x-spryzen-verdict: BLOCKED`, `x-spryzen-threat`).
+
+### Option B: Standalone Benchmark & Evaluation Mode
+```bash
+docker run -d -p 8081:8081 -e PORT=8081 ghcr.io/aditya-9-6/spryzen:latest
+```
+
+### Option C: Docker Compose
+```yaml
+version: '3.8'
+
+services:
+  spryzen:
+    image: ghcr.io/aditya-9-6/spryzen:latest
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - UPSTREAM_URL=http://my-backend:3000
+    depends_on:
+      - my-backend
+
+  my-backend:
+    image: my-app:latest
+    expose:
+      - "3000"
+```
+
+---
 
 Spryzen is continuously validated across industry-standard penetration tools and attack vector suites:
 

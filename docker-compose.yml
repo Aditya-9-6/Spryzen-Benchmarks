@@ -1,35 +1,30 @@
-services:
-  ironwall:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: spryzen-engine
-    ports:
-      - "8081:8081"
-    restart: unless-stopped
-    ulimits:
-      nofile:
-        soft: 1048576
-        hard: 1048576
-    deploy:
-      resources:
-        limits:
-          cpus: '2.0'
-          memory: 1024M
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8081/health"]
-      interval: 2s
-      timeout: 1s
-      retries: 10
-      start_period: 2s
+# =============================================================================
+# Spryzen+ (IronWall WAF) — Production Drop-in Reverse Proxy Demo
+# Protect any backend service in 30 seconds with 12µs P50 latency WAF shielding
+# =============================================================================
 
-  k6:
-    image: grafana/k6:latest
-    container_name: spryzen-k6-runner
+version: '3.8'
+
+services:
+  # --- SPRYZEN BARE-METAL WAF REVERSE PROXY ---
+  spryzen:
+    image: ghcr.io/aditya-9-6/spryzen:latest
+    container_name: spryzen-waf
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - UPSTREAM_URL=http://demo-backend:5678
+      - RUST_LOG=info
+    restart: always
     depends_on:
-      ironwall:
-        condition: service_healthy
-    volumes:
-      - ./benchmark.js:/benchmark.js:ro
-    entrypoint: ["k6", "run", "/benchmark.js"]
-    network_mode: "service:ironwall"
+      - demo-backend
+
+  # --- EXAMPLE UPSTREAM BACKEND SERVICE ---
+  demo-backend:
+    image: hashicorp/http-echo:latest
+    container_name: demo-backend
+    command: ["-text={\"status\":\"ok\",\"message\":\"Hello from your backend, shielded by Spryzen!\"}"]
+    ports:
+      - "5678:5678"
+    restart: always

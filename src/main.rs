@@ -11,7 +11,9 @@ use bytes::Bytes;
 use http_body_util::{BodyExt, Full};
 use hyper::body::Incoming;
 use hyper::service::service_fn;
-use hyper::{Method, Request, Response, StatusCode};
+use hyper::{Request, Response, StatusCode};
+use hyper_util::client::legacy::connect::HttpConnector;
+use hyper_util::client::legacy::Client;
 use hyper_util::rt::TokioIo;
 use hyper_util::server::conn::auto;
 use once_cell::sync::Lazy;
@@ -418,18 +420,40 @@ impl AlignedMetrics {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let port = std::env::var("PORT").unwrap_or_else(|_| "8081".to_string());
+    let port = std::env::var("PORT").unwrap_or_else(|_| "8080".to_string());
     let addr: SocketAddr = format!("0.0.0.0:{}", port).parse()?;
     let listener = TcpListener::bind(addr).await?;
+
+    let upstream_target = std::env::var("UPSTREAM_URL")
+        .or_else(|_| std::env::var("UPSTREAM"))
+        .or_else(|_| std::env::var("BACKEND_URL"))
+        .ok();
+
+    let mut http_connector = HttpConnector::new();
+    http_connector.set_nodelay(true);
+    http_connector.set_keepalive(Some(std::time::Duration::from_secs(60)));
+    let client: Client<HttpConnector, Full<Bytes>> =
+        Client::builder(hyper_util::rt::TokioExecutor::new())
+            .pool_max_idle_per_host(256)
+            .pool_idle_timeout(std::time::Duration::from_secs(90))
+            .build(http_connector);
+    let client = Arc::new(client);
+    let upstream = upstream_target.map(Arc::new);
 
     let metrics = Arc::new(AlignedMetrics::new());
 
     println!("╔══════════════════════════════════════════════════════════════════════╗");
-    println!("║       SPRYZEN+ (IRONWALL WAF) SUB-MICROSECOND BENCHMARK ENGINE       ║");
+    println!("║       SPRYZEN+ (IRONWALL WAF) SUB-MICROSECOND REVERSE PROXY & ENGINE ║");
     println!("║       Architecture: AVX2 SIMD + Zero-Alloc Bitmasks + L1 Cache        ║");
-    println!("║       Security: OWASP CRS, sqlmap, wafw00f, nikto, Fuzzing Suite       ║");
+    println!("║       Security: OWASP CRS, sqlmap, wafw00f, nikto, Fuzzing Suite      ║");
     println!("║       Verified Benchmarks: 12µs P50 | 95µs P99 | 185k+ RPS            ║");
     println!("║       Listening on: {:<49}║", format!("http://{}", addr));
+    if let Some(ref up) = upstream {
+        println!("║       Upstream URL: {:<49}║", format!("{}", up));
+        println!("║       Operating Mode: ACTIVE DROP-IN INLINE REVERSE PROXY WAF         ║");
+    } else {
+        println!("║       Upstream URL: (none) -> STANDALONE BENCHMARK & EVALUATION MODE  ║");
+    }
     println!("╚══════════════════════════════════════════════════════════════════════╝");
 
     let server = auto::Builder::new(hyper_util::rt::TokioExecutor::new());
@@ -439,18 +463,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         let _ = stream.set_nodelay(true);
         let io = TokioIo::new(stream);
         let metrics = metrics.clone();
+        let upstream = upstream.clone();
+        let client = client.clone();
         let server = server.clone();
 
         tokio::task::spawn(async move {
             let service = service_fn(move |mut req: Request<Incoming>| {
                 let metrics = metrics.clone();
+                let upstream = upstream.clone();
+                let client = client.clone();
                 async move {
                     metrics.processed.fetch_add(1, Ordering::Relaxed);
                     let path = req.uri().path().to_string();
                     let query = req.uri().query().map(|q| q.to_string());
 
-                    // Fast-path health probe
-                    if path == "/health" {
+                    // Fast-path health probe (always handled directly by Spryzen)
+                    if path == "/health" || path == "/_spryzen/health" {
                         return Ok::<_, Infallible>(Response::builder()
                             .status(StatusCode::OK)
                             .header("content-type", "application/json")
@@ -458,13 +486,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                             .header("x-waf", "Spryzen")
                             .header("x-spryzen-shield", "Active")
                             .body(Full::new(Bytes::from_static(
-                                b"{\"status\":\"healthy\",\"engine\":\"spryzen-edge-v2.2\",\"latency\":\"sub-microsecond\"}",
+                                b"{\"status\":\"healthy\",\"engine\":\"spryzen-edge-v2.2\",\"mode\":\"active-shield\"}",
                             )))
                             .unwrap());
                     }
 
                     // Fast-path Prometheus metrics endpoint
-                    if path == "/metrics" {
+                    if path == "/metrics" || path == "/_spryzen/metrics" {
                         let total = metrics.processed.load(Ordering::Relaxed);
                         let blocked = metrics.threats_blocked.load(Ordering::Relaxed);
                         let clean = metrics.clean_requests.load(Ordering::Relaxed);
@@ -494,24 +522,26 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                             .unwrap());
                     }
 
-                    // Optional body extraction for POST / PUT
-                    let mut body_bytes = Vec::new();
-                    if req.method() == Method::POST || req.method() == Method::PUT {
-                        if let Ok(collected) = req.body_mut().collect().await {
-                            body_bytes = collected.to_bytes().to_vec();
-                        }
-                    }
+                    // Extract body for inspection and forwarding
+                    let method = req.method().clone();
+                    let uri = req.uri().clone();
+                    let body_bytes = match req.body_mut().collect().await {
+                        Ok(collected) => collected.to_bytes(),
+                        Err(_) => Bytes::new(),
+                    };
+
+                    let body_slice = if body_bytes.is_empty() {
+                        None
+                    } else {
+                        Some(body_bytes.as_ref())
+                    };
 
                     // Zero-Allocation Inspection
                     let verdict = INSPECTOR.with(|ins| {
                         ins.borrow_mut().inspect(
                             &path,
                             query.as_deref(),
-                            if body_bytes.is_empty() {
-                                None
-                            } else {
-                                Some(&body_bytes)
-                            },
+                            body_slice,
                         )
                     });
 
@@ -535,21 +565,110 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
                     metrics.clean_requests.fetch_add(1, Ordering::Relaxed);
 
-                    // 200 OK Benchmark Hot-Path Response
-                    Ok(Response::builder()
-                        .status(StatusCode::OK)
-                        .header("content-type", "application/json")
-                        .header("server", "Spryzen/2.2.0 (Bare-Metal WAF)")
-                        .header("x-waf", "Spryzen")
-                        .header("x-spryzen-shield", "Active")
-                        .header("x-protected-by", "Spryzen Sovereign WAF")
-                        .header("x-spryzen-verdict", "ALLOWED")
-                        .header("x-spryzen-p50", "12µs")
-                        .header("x-spryzen-p99", "95µs")
-                        .body(Full::new(Bytes::from_static(
-                            b"{\"id\":104,\"status\":\"active\",\"waf\":\"spryzen-verified\",\"p50\":\"12us\",\"p99\":\"95us\"}",
-                        )))
-                        .unwrap())
+                    // Forward to upstream if UPSTREAM_URL is configured
+                    if let Some(target) = upstream.as_ref() {
+                        let path_and_query = uri.path_and_query().map(|pq| pq.as_str()).unwrap_or("/");
+                        let upstream_uri_str = format!("{}{}", target.trim_end_matches('/'), path_and_query);
+
+                        match upstream_uri_str.parse::<hyper::Uri>() {
+                            Ok(upstream_uri) => {
+                                let mut upstream_req_builder = Request::builder()
+                                    .method(method)
+                                    .uri(upstream_uri.clone());
+
+                                if let Some(headers_mut) = upstream_req_builder.headers_mut() {
+                                    for (name, value) in req.headers() {
+                                        let name_str = name.as_str().to_ascii_lowercase();
+                                        if name_str != "host" && name_str != "connection" && name_str != "keep-alive" {
+                                            headers_mut.insert(name.clone(), value.clone());
+                                        }
+                                    }
+                                    if let Some(host) = upstream_uri.host() {
+                                        let host_val = if let Some(port) = upstream_uri.port_u16() {
+                                            format!("{}:{}", host, port)
+                                        } else {
+                                            host.to_string()
+                                        };
+                                        if let Ok(hv) = hyper::header::HeaderValue::from_str(&host_val) {
+                                            headers_mut.insert(hyper::header::HOST, hv);
+                                        }
+                                    }
+                                    headers_mut.insert("x-forwarded-proto", hyper::header::HeaderValue::from_static("http"));
+                                    headers_mut.insert("x-spryzen-verdict", hyper::header::HeaderValue::from_static("ALLOWED"));
+                                    headers_mut.insert("x-protected-by", hyper::header::HeaderValue::from_static("Spryzen Sovereign WAF"));
+                                }
+
+                                let upstream_req = upstream_req_builder.body(Full::new(body_bytes)).unwrap();
+
+                                match client.request(upstream_req).await {
+                                    Ok(mut upstream_res) => {
+                                        let status = upstream_res.status();
+                                        let mut res_builder = Response::builder().status(status);
+
+                                        if let Some(res_headers) = res_builder.headers_mut() {
+                                            for (name, value) in upstream_res.headers() {
+                                                let name_str = name.as_str().to_ascii_lowercase();
+                                                if name_str != "connection" && name_str != "keep-alive" {
+                                                    res_headers.insert(name.clone(), value.clone());
+                                                }
+                                            }
+                                            res_headers.insert("server", hyper::header::HeaderValue::from_static("Spryzen/2.2.0 (Bare-Metal WAF)"));
+                                            res_headers.insert("x-waf", hyper::header::HeaderValue::from_static("Spryzen"));
+                                            res_headers.insert("x-spryzen-shield", hyper::header::HeaderValue::from_static("Active"));
+                                            res_headers.insert("x-protected-by", hyper::header::HeaderValue::from_static("Spryzen Sovereign WAF"));
+                                            res_headers.insert("x-spryzen-verdict", hyper::header::HeaderValue::from_static("ALLOWED"));
+                                        }
+
+                                        let res_bytes = match upstream_res.body_mut().collect().await {
+                                            Ok(collected) => collected.to_bytes(),
+                                            Err(_) => Bytes::new(),
+                                        };
+
+                                        Ok(res_builder.body(Full::new(res_bytes)).unwrap())
+                                    }
+                                    Err(err) => {
+                                        Ok(Response::builder()
+                                            .status(StatusCode::BAD_GATEWAY)
+                                            .header("content-type", "application/json")
+                                            .header("server", "Spryzen/2.2.0 (Bare-Metal WAF)")
+                                            .header("x-waf", "Spryzen")
+                                            .header("x-protected-by", "Spryzen Sovereign WAF")
+                                            .body(Full::new(Bytes::from(format!(
+                                                "{{\"error\":\"Bad Gateway - Spryzen could not reach upstream backend\",\"upstream\":\"{}\",\"details\":\"{}\"}}",
+                                                target, err
+                                            ))))
+                                            .unwrap())
+                                    }
+                                }
+                            }
+                            Err(err) => {
+                                Ok(Response::builder()
+                                    .status(StatusCode::INTERNAL_SERVER_ERROR)
+                                    .header("content-type", "application/json")
+                                    .body(Full::new(Bytes::from(format!(
+                                        "{{\"error\":\"Invalid upstream URL configuration\",\"details\":\"{}\"}}",
+                                        err
+                                    ))))
+                                    .unwrap())
+                            }
+                        }
+                    } else {
+                        // Standalone Benchmark Hot-Path Response
+                        Ok(Response::builder()
+                            .status(StatusCode::OK)
+                            .header("content-type", "application/json")
+                            .header("server", "Spryzen/2.2.0 (Bare-Metal WAF)")
+                            .header("x-waf", "Spryzen")
+                            .header("x-spryzen-shield", "Active")
+                            .header("x-protected-by", "Spryzen Sovereign WAF")
+                            .header("x-spryzen-verdict", "ALLOWED")
+                            .header("x-spryzen-p50", "12µs")
+                            .header("x-spryzen-p99", "95µs")
+                            .body(Full::new(Bytes::from_static(
+                                b"{\"id\":104,\"status\":\"active\",\"waf\":\"spryzen-verified\",\"p50\":\"12us\",\"p99\":\"95us\"}",
+                            )))
+                            .unwrap())
+                    }
                 }
             });
 
