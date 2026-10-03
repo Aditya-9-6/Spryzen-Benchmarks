@@ -120,8 +120,8 @@ impl Default for SpryzenConfig {
             },
             rate_limit: RateLimitConfig {
                 enabled: true,
-                requests_per_second: 1000,
-                burst: 2000,
+                requests_per_second: 100_000,
+                burst: 200_000,
             },
             allowlist: AllowlistConfig {
                 paths: vec![
@@ -193,6 +193,9 @@ impl SpryzenConfig {
                 config.rate_limit.requests_per_second = val;
                 config.rate_limit.burst = val * 2;
             }
+        }
+        if let Ok(enabled) = std::env::var("RATE_LIMIT_ENABLED") {
+            config.rate_limit.enabled = enabled.to_lowercase() != "false" && enabled != "0";
         }
 
         config
@@ -1197,8 +1200,8 @@ mod tests {
     fn test_config_defaults() {
         let config = SpryzenConfig::default();
         assert_eq!(config.server.mode, EnforcementMode::Block);
-        assert_eq!(config.rate_limit.requests_per_second, 1000);
-        assert_eq!(config.rate_limit.burst, 2000);
+        assert_eq!(config.rate_limit.requests_per_second, 100_000);
+        assert_eq!(config.rate_limit.burst, 200_000);
         assert!(config.allowlist.is_path_allowlisted("/health"));
     }
 
