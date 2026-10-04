@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "spryzen.fullname" . }}-config
+  labels:
+    {{- include "spryzen.labels" . | nindent 4 }}
+data:
+  spryzen.toml: |
+    [server]
+    listen = "0.0.0.0:{{ .Values.spryzen.port }}"
+    upstream = "{{ .Values.spryzen.upstreamUrl }}"
+    mode = "{{ .Values.spryzen.mode }}"
+    timeout_ms = {{ .Values.spryzen.timeoutMs }}
+    max_body_bytes = {{ .Values.spryzen.maxBodyBytes }}
+
+    [rate_limit]
+    enabled = {{ .Values.spryzen.rateLimit.enabled }}
+    requests_per_second = {{ .Values.spryzen.rateLimit.requestsPerSecond }}
+    burst = {{ .Values.spryzen.rateLimit.burst }}
+
+    [allowlist]
+    paths = [
+      "/health",
+      "/metrics",
+      "/_spryzen/*"
+    ]
+    ips = []
+
+    [logging]
+    format = "{{ .Values.spryzen.logging.format }}"
+    mask_headers = [
+      {{- range .Values.spryzen.logging.maskHeaders }}
+      {{ . | quote }},
+      {{- end }}
+    ]

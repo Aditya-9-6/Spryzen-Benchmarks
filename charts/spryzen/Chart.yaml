@@ -1,0 +1,17 @@
+apiVersion: v2
+name: spryzen
+description: Enterprise Rust-native AVX2 Web Application Firewall & Zero-Trust Reverse Proxy
+type: application
+version: 1.0.0
+appVersion: "2.2.0"
+keywords:
+  - waf
+  - security
+  - reverse-proxy
+  - rust
+  - zero-trust
+  - owasp
+home: https://github.com/Aditya-9-6/spryzen
+maintainers:
+  - name: Aditya
+    email: aditya@spryzen.io

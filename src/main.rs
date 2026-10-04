@@ -851,9 +851,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                                     .header("retry-after", "1")
                                     .header("x-spryzen-verdict", "RATE_LIMITED")
                                     .header("x-protected-by", "Spryzen Sovereign WAF")
-                                    .body(Full::new(Bytes::from_static(
-                                        b"{\"error\":\"Too Many Requests - Rate limit exceeded by Spryzen+\",\"limit_rps\":1000}",
-                                    )))
+                                    .body(Full::new(Bytes::from(format!(
+                                        "{{\"error\":\"Too Many Requests - Rate limit exceeded by Spryzen+\",\"limit_rps\":{}}}",
+                                        config.rate_limit.requests_per_second
+                                    ))))
                                     .unwrap());
                             }
 
