@@ -1,0 +1,14 @@
+/home/runner/work/Spryzen-Benchmarks/Spryzen-Benchmarks/target/release/deps/serde-dd7baba3d6a8dd81.d: /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.229/src/lib.rs /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.229/src/integer128.rs /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.229/src/private/mod.rs /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.229/src/private/de.rs /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.229/src/private/ser.rs /home/runner/work/Spryzen-Benchmarks/Spryzen-Benchmarks/target/release/build/serde-b4e5c3f3b09ff7fd/out/private.rs
+
+/home/runner/work/Spryzen-Benchmarks/Spryzen-Benchmarks/target/release/deps/libserde-dd7baba3d6a8dd81.rlib: /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.229/src/lib.rs /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.229/src/integer128.rs /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.229/src/private/mod.rs /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.229/src/private/de.rs /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.229/src/private/ser.rs /home/runner/work/Spryzen-Benchmarks/Spryzen-Benchmarks/target/release/build/serde-b4e5c3f3b09ff7fd/out/private.rs
+
+/home/runner/work/Spryzen-Benchmarks/Spryzen-Benchmarks/target/release/deps/libserde-dd7baba3d6a8dd81.rmeta: /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.229/src/lib.rs /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.229/src/integer128.rs /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.229/src/private/mod.rs /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.229/src/private/de.rs /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.229/src/private/ser.rs /home/runner/work/Spryzen-Benchmarks/Spryzen-Benchmarks/target/release/build/serde-b4e5c3f3b09ff7fd/out/private.rs
+
+/home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.229/src/lib.rs:
+/home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.229/src/integer128.rs:
+/home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.229/src/private/mod.rs:
+/home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.229/src/private/de.rs:
+/home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.229/src/private/ser.rs:
+/home/runner/work/Spryzen-Benchmarks/Spryzen-Benchmarks/target/release/build/serde-b4e5c3f3b09ff7fd/out/private.rs:
+
+# env-dep:OUT_DIR=/home/runner/work/Spryzen-Benchmarks/Spryzen-Benchmarks/target/release/build/serde-b4e5c3f3b09ff7fd/out
