@@ -10,13 +10,15 @@
 
 Official reproducible benchmark suite, penetration evaluation, and microsecond architectural implementation for the **Spryzen Bare-Metal WAF & Edge Security Engine**.
 
-> **Systems Invariants:** Reaching **6.92M PPS** L3/L4 kernel-bypass DDoS filtering and **4.83M sustained RPS** horizontal proxy throughput. Powered by zero-allocation Rust, AVX2 SIMD scanning, and L1 cache lookup tables with upstream systems contributions across Tokio, Wasmtime, smoltcp, Foundry, Cloudflare Pingora, and Hyper.
+> ⚠️ **Reproducibility scope:** performance and latency are highly environment-dependent (CPU model, core count, OS/kernel, runner load, virtualization, and loopback/network path). Treat fixed throughput/latency numbers in this README as **historical examples** unless they are listed under the "Latest local/CI verification" section below.
+
+> **Systems design target:** up to multi-million PPS/RPS under prior benchmark environments. Current-run reproducible outputs are documented in the verification section below.
 
 ---
 
 ## 📊 Summary of Benchmark Results
 
-All benchmarks were conducted on a single dedicated vCPU (`c6i.large` / AMD EPYC 7R13) running Ubuntu 22.04 LTS with keep-alive connections enabled over loopback.
+Historical benchmark snapshot from a previous dedicated environment (`c6i.large` / AMD EPYC 7R13, Ubuntu 22.04 LTS, keep-alive over loopback). This table is not a guarantee for all systems.
 
 ```
 +---------------------------------------------------------------------------------------------------+
@@ -129,7 +131,7 @@ kubectl apply -f k8s/spryzen-sidecar.yaml
 
 ---
 
-Spryzen is continuously validated across industry-standard penetration tools and attack vector suites:
+Spryzen is continuously validated across industry-standard penetration tools and attack vector suites (table below is project-level/historical context; see latest local verification for this run):
 
 | Audit Suite / Tool | Test Description | Target Invariant | Result |
 |---|---|---|:---:|
@@ -142,7 +144,7 @@ Spryzen is continuously validated across industry-standard penetration tools and
 
 ---
 
-## 🔬 Verified Nanosecond & Microsecond Hardware Telemetry
+## 🔬 Historical Nanosecond & Microsecond Hardware Telemetry
 
 ### 1. Pure CPU Zero-Allocation Microbenchmark (1,000,000 Requests)
 Executed via `cargo test --release -- test_microsecond_inspection_benchmark --nocapture`:
@@ -182,37 +184,90 @@ Spryzen's sub-microsecond networking and zero-allocation philosophy is directly 
 
 ## 🚀 How to Reproduce Locally
 
-### 1. Clone the Benchmark Repo
+### 1. Prerequisites
+```bash
+rustc --version
+cargo --version
+python3 --version
+k6 version              # optional (required only for benchmark.js)
+wafw00f --version       # optional (used by eval_security.py when available)
+sqlmap --version        # optional (used by eval_security.py when available)
+nikto -Version          # optional (used by eval_security.py when available)
+```
+
+### 2. Clone and enter repository
 ```bash
 git clone https://github.com/Aditya-9-6/Spryzen-Benchmarks.git
 cd Spryzen-Benchmarks
 ```
 
-### 2. Run Engine & Unit Tests
+### 3. Reproducible checks
 ```bash
+cargo fmt -- --check
+cargo clippy --all-targets -- -D warnings
 cargo test --release -- --nocapture
+cargo build --release
 ```
 
-### 3. Run Security Evaluation (OWASP CRS, sqlmap, wafw00f, nikto)
+### 4. Start server for runtime/security/perf checks
 ```bash
-# In terminal 1: Start Spryzen engine
-cargo run --release
+PORT=8081 RATE_LIMIT_ENABLED=false ./target/release/spryzen-engine
+```
 
-# In terminal 2: Run security audit
+### 5. Verify server health (new terminal)
+```bash
+curl -i http://127.0.0.1:8081/health
+```
+
+### 6. Runtime checks against the running server (new terminal)
+```bash
+# k6 benchmark (optional; requires k6 binary)
+k6 run benchmark.js
+
+# Optional target override (backwards-compatible with existing default)
+k6 run -e TARGET_URL=http://127.0.0.1:8081/products/104 benchmark.js
+
+# Security evaluation (defaults to http://127.0.0.1:8081)
 python3 scripts/eval_security.py
-```
 
-### 4. Run Extreme Packet Fuzzing
-```bash
+# Fuzz safety validation
 python3 scripts/fuzz_test.py
 ```
 
-### 5. Run High-Concurrency k6 Load Test
-```bash
-k6 run benchmark.js
-```
-
 ---
+
+## ✅ Latest local/CI verification (this task run)
+
+Timestamp (UTC): `2026-10-06`
+
+Environment-observed tool versions:
+
+- `rustc 1.98.1 (48a229cea 2026-09-01)`
+- `cargo 1.98.1 (797e8a9bc 2026-08-05)`
+- `Python 3.12.3`
+- `k6`: **not installed** in this environment
+
+Local checks executed:
+
+- `cargo fmt -- --check` ✅ pass (exit code 0)
+- `cargo clippy --all-targets -- -D warnings` ✅ pass (exit code 0)
+- `cargo test --release -- --nocapture` ✅ pass (`13 passed; 0 failed`)
+- `cargo build --release` ✅ pass
+- `PORT=8081 RATE_LIMIT_ENABLED=false ./target/release/spryzen-engine` ✅ started
+- `curl -i http://127.0.0.1:8081/health` ✅ `HTTP/1.1 200 OK` with `server: Spryzen/2.2.0`
+- `k6 run benchmark.js` ⚠️ skipped (`k6: command not found`)
+- `python3 scripts/eval_security.py` ✅ pass:
+  - OWASP vectors blocked: `39/39 (100.00%)`
+  - False positives on clean traffic: `0/10 (0.00%)`
+  - `wafw00f`, `sqlmap`, `nikto`: skipped (not installed)
+- `python3 scripts/fuzz_test.py` ✅ pass:
+  - `FUZZ_COUNT=10000`
+  - `server_crashes=0`
+  - final health check passed
+
+Relevant CI observation during this task:
+
+- Recent pull-request workflow runs were listed via GitHub Actions API and showed `conclusion: action_required` with `total_jobs: 0` for this in-progress Copilot branch run, so no failed-job logs were available for those runs.
 
 ## 📜 License
 Distributed under the **MIT License**. See [`LICENSE`](LICENSE) for details.
