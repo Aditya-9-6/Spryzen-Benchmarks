@@ -23,7 +23,7 @@ export const options = {
   summaryTrendStats: ['avg', 'min', 'med', 'p(90)', 'p(95)', 'p(99)', 'max'],
 };
 
-const TARGET_URL = 'http://127.0.0.1:8081/products/104';
+const TARGET_URL = __ENV.TARGET_URL || 'http://127.0.0.1:8081/products/104';
 
 const HEADERS = {
   'User-Agent': 'Spryzen-Benchmark-Client/1.0',

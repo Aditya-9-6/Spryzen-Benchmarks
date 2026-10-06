@@ -1,0 +1,8 @@
+{
+  "fuzz_count": 10000,
+  "mutations_delivered": 10000,
+  "server_crashes": 0,
+  "duration_seconds": 0.8062388896942139,
+  "throughput_mutations_sec": 12403.271695058953,
+  "status": "PASS"
+}
