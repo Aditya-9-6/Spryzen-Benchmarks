@@ -238,36 +238,81 @@ python3 scripts/fuzz_test.py
 
 ## ✅ Latest local/CI verification (this task run)
 
-Timestamp (UTC): `2026-10-06`
+### Latest measured local benchmark (`2026-10-06`, real run)
 
-Environment-observed tool versions:
+Benchmark execution context:
 
-- `rustc 1.98.1 (48a229cea 2026-09-01)`
-- `cargo 1.98.1 (797e8a9bc 2026-08-05)`
-- `Python 3.12.3`
-- `k6`: **not installed** in this environment
+- Host OS: `Ubuntu 24.04.5 LTS` (`Linux 6.17.0-1022-azure`)
+- CPU/arch: `AMD EPYC 7763` / `x86_64` (4 vCPUs visible)
+- Rust toolchain: `rustc 1.98.1 (48a229cea 2026-09-01)`, `cargo 1.98.1 (797e8a9bc 2026-08-05)`
+- k6 runtime: Docker image `grafana/k6:latest` → `k6 v2.3.0 (linux/amd64)`
+- Engine run mode: `PORT=8081 RATE_LIMIT_ENABLED=false ./target/release/spryzen-engine`
+- Networking path for benchmark traffic: k6 container with `--network host` to host loopback server (`127.0.0.1:8081`)
+- Docker usage: **Yes** (k6 only; Rust engine ran on host)
 
-Local checks executed:
+k6 command used:
 
-- `cargo fmt -- --check` ✅ pass (exit code 0)
-- `cargo clippy --all-targets -- -D warnings` ✅ pass (exit code 0)
+```bash
+docker run --rm --network host \
+  -v /home/runner/work/Spryzen-Benchmarks/Spryzen-Benchmarks:/work:ro \
+  -v /tmp:/tmphost \
+  -w /work \
+  grafana/k6 run --summary-export /tmphost/spryzen-k6-summary.json /work/benchmark.js
+```
+
+Measured k6 values (500 VUs, 30s scenario):
+
+- Total requests: `583,334`
+- Requests/sec: `19,438.55 req/s`
+- Error rate (`http_req_failed`): `0.0000%`
+- p50/median (`http_req_duration`): `19.442 ms`
+- p90: `33.303 ms`
+- p95: `40.499 ms`
+- p99: `57.958 ms`
+- max: `124.930 ms`
+- Test duration: `30.0s` active scenario (`32s` max including configured graceful stop window)
+
+Complete k6 benchmark summary from this run:
+
+```text
+======================================================================
+       ⚡ SPRYZEN+ (IRONWALL WAF) VERIFIED NETWORK BENCHMARK ⚡
+======================================================================
+
+  • Total Processed Requests : 583334
+  • Sustained Throughput     : 19439 RPS
+  • Error / Failure Rate     : 0.0000%
+
+──────────────────────────────────────────────────────────────────────
+  PROTOCOL & LATENCY BREAKDOWN (MICROSECONDS / µs):
+──────────────────────────────────────────────────────────────────────
+  • TCP Connect Latency (P50): 0.00 µs | P95: 0.00 µs (0 ns via HTTP Keep-Alive)
+  • HTTP Socket Sending (P50): 7.46 µs | P95: 39.88 µs (Sub-µs Kernel Buffer)
+  • Server Processing (TTFB) : 19300.79 µs | P95: 39102.50 µs
+  • Socket Read / Recv (P50) : 21.79 µs | P95: 163.78 µs
+  • TOTAL P50 HOT-PATH       : 19442.38 µs
+  • TOTAL P99 TAIL LATENCY   : 57957.79 µs
+──────────────────────────────────────────────────────────────────────
+  🔬 HARDWARE TELEMETRY NOTE:
+  • 0.00 µs TCP Connect: 99.87% of requests reuse persistent Keep-Alive sockets.
+  • Pure CPU Engine Latency: 14.01 ns clean L1 cache | 8.05 ns threat scan.
+======================================================================
+```
+
+### Historical local/CI verification snapshot (earlier run on this branch)
+
+Previously recorded checks (retained as historical context):
+
+- `cargo fmt -- --check` ✅ pass
+- `cargo clippy --all-targets -- -D warnings` ✅ pass
 - `cargo test --release -- --nocapture` ✅ pass (`13 passed; 0 failed`)
 - `cargo build --release` ✅ pass
 - `PORT=8081 RATE_LIMIT_ENABLED=false ./target/release/spryzen-engine` ✅ started
 - `curl -i http://127.0.0.1:8081/health` ✅ `HTTP/1.1 200 OK` with `server: Spryzen/2.2.0`
-- `k6 run benchmark.js` ⚠️ skipped (`k6: command not found`)
-- `python3 scripts/eval_security.py` ✅ pass:
-  - OWASP vectors blocked: `39/39 (100.00%)`
-  - False positives on clean traffic: `0/10 (0.00%)`
-  - `wafw00f`, `sqlmap`, `nikto`: skipped (not installed)
-- `python3 scripts/fuzz_test.py` ✅ pass:
-  - `FUZZ_COUNT=10000`
-  - `server_crashes=0`
-  - final health check passed
+- `python3 scripts/eval_security.py` ✅ pass (`39/39` vectors blocked, `0/10` false positives)
+- `python3 scripts/fuzz_test.py` ✅ pass (`FUZZ_COUNT=10000`, `server_crashes=0`)
 
-Relevant CI observation during this task:
-
-- Recent pull-request workflow runs were listed via GitHub Actions API and showed `conclusion: action_required` with `total_jobs: 0` for this in-progress Copilot branch run, so no failed-job logs were available for those runs.
+These measurements are environment-specific and should not be treated as universal or independently reproducible across different hardware/VM/network conditions without rerunning the same commands.
 
 ## 📜 License
 Distributed under the **MIT License**. See [`LICENSE`](LICENSE) for details.
